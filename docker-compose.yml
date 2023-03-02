@@ -1,0 +1,46 @@
+version: "3"
+
+services:
+  # mysqlの実行環境
+  mysql:
+    image: mysql:8.0.21
+    ports:
+      - "3306:3306"
+    volumes:
+      - go_mysql_data:/var/lib/mysql
+      - ./docker/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_USER: "user"
+      MYSQL_PASSWORD: "password"
+      MYSQL_ROOT_PASSWORD: "Qwert!2345"
+      MYSQL_DATABASE: "go_echo_gorm"
+    networks:
+      - container_link
+
+  # Golangの実行環境
+  app:
+    build:
+      context: ./
+      dockerfile: docker/app/Dockerfile
+    depends_on:
+      - mysql
+    networks:
+      - container_link
+    volumes:
+      - ./:/app
+    tty: true
+    ports:
+      - "8080:8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "1"
+
+networks:
+  container_link:
+    name: echo-gorm.docker.internal
+
+volumes:
+  go_mysql_data:
